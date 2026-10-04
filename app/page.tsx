@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight, CheckCircle2, ChevronDown, Leaf, Menu, MessageCircle,
-  Phone, Search, ShoppingBasket, Sprout, Tractor, X, MapPin, Star
+  Phone, Search, ShoppingBasket, Sprout, Tractor, X, MapPin, Star, Bot
 } from "lucide-react";
 
-const products = [
+const defaultProducts = [
   { name: "Premium Paddy Seeds", category: "Seeds", price: "₹480 / pack", image: "https://images.unsplash.com/photo-1536633075091-8d3d1d3d1f1c?auto=format&fit=crop&w=900&q=80", tag: "Best Seller" },
   { name: "Organic Vegetable Seeds", category: "Seeds", price: "₹220 / pack", image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=900&q=80", tag: "Organic" },
   { name: "Neem Bio Fertilizer", category: "Fertilizers", price: "₹690 / 5 kg", image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=900&q=80", tag: "Eco Choice" },
@@ -23,6 +23,8 @@ const services = [
 export default function Home() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [products, setProducts] = useState(defaultProducts);
+  useEffect(() => { try { const saved=localStorage.getItem("agri-products-v2"); if(saved) setProducts(JSON.parse(saved)); } catch {} }, []);
 
   const filtered = products.filter((p) =>
     (p.name + p.category).toLowerCase().includes(query.toLowerCase())
@@ -45,7 +47,7 @@ export default function Home() {
           {["Home","Products","Services","About","Contact"].map((x) =>
             <a key={x} href={"#" + x.toLowerCase()} onClick={() => setOpen(false)}>{x}</a>
           )}
-          <a className="nav-cta" href="#contact">Enquire Now <ArrowRight size={16}/></a>
+          <a className="nav-cta" href="#contact">Enquire Now <ArrowRight size={16}/></a><a className="nav-ai" href="/ai"><Bot size={15}/> AI Assistant</a><a className="nav-admin" href="/admin">Admin</a>
         </nav>
       </header>
 
@@ -109,6 +111,8 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="map-section section"><div className="section-head"><div><div className="eyebrow">FARM MAP</div><h2>Find agriculture<br/><span>near you.</span></h2></div><p>Explore your farm area and agriculture locations. Supplier and service markers can be connected as the marketplace grows.</p></div><div className="map-card"><iframe title="Agriculture map" src="https://www.openstreetmap.org/export/embed.html?bbox=76.6%2C10.7%2C77.2%2C11.2&layer=mapnik" loading="lazy"></iframe></div></section>
+
       <section className="ai-band">
         <div className="ai-icon">✦</div>
         <div><div className="eyebrow">FUTURE OF FARMING</div><h2>Bring AI into your field.</h2><p>Connect soil sensors, crop observations and farm data to get useful insights in one place.</p></div>
@@ -134,6 +138,6 @@ export default function Home() {
         <div className="footer-contact"><span><MapPin size={15}/> Tamil Nadu, India</span><span><Phone size={15}/> +91 90000 00000</span><span><MessageCircle size={15}/> WhatsApp us</span></div>
         <div className="copyright">© 2026 AgriRoot Farm Solutions. All rights reserved.</div>
       </footer>
-    </main>
+    <a className="floating-ai" href="/ai"><Bot size={20}/> Ask AgriAssist</a></main>
   );
 }
