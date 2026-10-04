@@ -1,0 +1,54 @@
+name: Build AgriRoot Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      web_url:
+        description: "Live HTTPS URL of the Agri website"
+        required: true
+        type: string
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install web dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Install Capacitor
+        run: npm install @capacitor/core@9 @capacitor/android@9 @capacitor/cli@9
+
+      - name: Create Android project
+        env:
+          AGRI_WEB_URL: ${{ inputs.web_url }}
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        env:
+          AGRI_WEB_URL: ${{ inputs.web_url }}
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgriRoot-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
