@@ -6,13 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "android:add": "npx cap add android",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "npx cap build android"
   },
   "dependencies": {
     "next": "16.3.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "lucide-react": "0.468.0"
+    "lucide-react": "0.468.0",
+    "@capacitor/core": "^9.0.0",
+    "@capacitor/android": "^9.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.14",
@@ -23,6 +29,7 @@
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "eslint": "9.39.1",
-    "eslint-config-next": "16.3.0"
+    "eslint-config-next": "16.3.0",
+    "@capacitor/cli": "^9.0.0"
   }
 }
