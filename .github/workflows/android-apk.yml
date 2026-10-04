@@ -30,9 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Prepare Capacitor web directory
-        run: mkdir -p out && printf '%s\n' '<!doctype html><html><body>AgriRoot</body></html>' > out/index.html
-
       - name: Create Android project
         run: npx cap add android
 
