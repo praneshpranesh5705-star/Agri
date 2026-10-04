@@ -1,12 +1,11 @@
 name: Build AgriRoot Android APK
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-apk.yml"
   workflow_dispatch:
-    inputs:
-      web_url:
-        description: "Live HTTPS URL of the Agri website"
-        required: true
-        type: string
 
 jobs:
   build-android:
@@ -32,12 +31,12 @@ jobs:
 
       - name: Create Android project
         env:
-          AGRI_WEB_URL: ${{ inputs.web_url }}
+          AGRI_WEB_URL: https://agri-2cjih6r5d-pranesh-bf52.vercel.app
         run: npx cap add android
 
       - name: Sync Capacitor
         env:
-          AGRI_WEB_URL: ${{ inputs.web_url }}
+          AGRI_WEB_URL: https://agri-2cjih6r5d-pranesh-bf52.vercel.app
         run: npx cap sync android
 
       - name: Build debug APK
