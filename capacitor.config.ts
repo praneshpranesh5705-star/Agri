@@ -1,13 +1,11 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
-const webUrl = process.env.AGRI_WEB_URL || "https://example.com";
-
 const config: CapacitorConfig = {
   appId: "com.agroroot.agri",
   appName: "AgriRoot",
   webDir: "out",
   server: {
-    url: webUrl,
+    url: "https://agri-2cjih6r5d-pranesh-bf52.vercel.app",
     cleartext: false
   },
   android: {
