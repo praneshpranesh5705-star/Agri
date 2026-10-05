@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
+const MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
@@ -14,26 +18,35 @@ export async function POST(req: Request) {
       mimeType?: string;
     };
 
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GROQ_API_KEY;
 
     if (!key) {
-      return NextResponse.json({
-        reply:
-          "AgriAssist is ready, but GEMINI_API_KEY is not configured in Vercel. Add it in Vercel → Settings → Environment Variables and redeploy."
-      });
+      return NextResponse.json(
+        {
+          reply:
+            "AgriAssist is ready, but GROQ_API_KEY is not configured. Add GROQ_API_KEY to your Vercel Environment Variables and redeploy."
+        },
+        { status: 503 }
+      );
     }
 
-    const prompt = `You are AgriAssist, an expert agriculture assistant for Indian farmers.
-Answer clearly and practically about crops, vegetables, fruits, soil, irrigation, fertilizers, pest management, seeds, tractors, pumps, farm machinery, agricultural tools, sensors/IoT, greenhouse equipment, market questions and farm planning.
-If an uploaded crop/plant image is provided, carefully describe visible symptoms first, give likely possibilities rather than claiming certainty, and recommend safe next steps. Do not pretend an image diagnosis is 100% certain.
-For pesticide dosage, always tell the user to follow the product label and local agricultural officer.
-If the question is unrelated to agriculture, say you specialize in agriculture.
-User question: ${typeof message === "string" && message.trim() ? message : "Please analyze the uploaded agricultural image."}`;
+    const systemPrompt = `You are AgriAssist, an expert agriculture AI assistant for Indian farmers and agriculture students.
+Give practical, clear and accurate answers about crops, vegetables, fruits, soil, irrigation, fertilizers, pests, diseases, seeds, machinery, sensors, IoT, greenhouse systems, farm planning and agricultural technology.
+You can also solve mathematics, science and engineering questions when the user asks.
+For an uploaded agricultural image, carefully identify what is visibly present, explain likely symptoms or possibilities, and give safe next steps. Never claim an image diagnosis is 100% certain.
+For pesticide or chemical recommendations, tell the user to follow the product label and consult a qualified local agricultural officer.
+Use simple language and structured steps when helpful. If the question is unrelated to agriculture, still answer useful general questions when possible.`;
 
-    const parts: Array<{
-      text?: string;
-      inlineData?: { mimeType: string; data: string };
-    }> = [{ text: prompt }];
+    const userText = typeof message === "string" && message.trim()
+      ? message.trim()
+      : "Please analyze the uploaded image and explain what you observe.";
+
+    const content: Array<
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } }
+    > = [
+      { type: "text", text: userText }
+    ];
 
     if (typeof image === "string" && image && mimeType) {
       const base64 = image.replace(/^data:[^;]+;base64,/, "");
@@ -45,45 +58,62 @@ User question: ${typeof message === "string" && message.trim() ? message : "Plea
         );
       }
 
-      parts.push({ inlineData: { mimeType, data: base64 } });
+      content.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${mimeType};base64,${base64}`
+        }
+      });
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25_000);
+    const timeout = setTimeout(() => controller.abort(), 30_000);
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
-        encodeURIComponent(key),
-      {
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts }] }),
-        signal: controller.signal
-      }
-    );
-
-    clearTimeout(timeout);
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Gemini API error:", data);
-      return NextResponse.json(
-        {
-          reply:
-            "Gemini could not process the request. Please check the Vercel API key and try again."
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`
         },
-        { status: 502 }
-      );
+        body: JSON.stringify({
+          model: MODEL,
+          temperature: 0.2,
+          max_tokens: 1200,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content }
+          ]
+        }),
+        signal: controller.signal
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error("Groq API error:", data);
+        return NextResponse.json(
+          {
+            reply:
+              "Groq could not process the request. Please check GROQ_API_KEY in Vercel and try again."
+          },
+          { status: 502 }
+        );
+      }
+
+      const reply = data?.choices?.[0]?.message?.content;
+
+      if (typeof reply !== "string" || !reply.trim()) {
+        return NextResponse.json(
+          { reply: "I could not generate an answer. Please try again." },
+          { status: 502 }
+        );
+      }
+
+      return NextResponse.json({ reply: reply.trim() });
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const reply =
-      data?.candidates?.[0]?.content?.parts
-        ?.map((part: any) => part?.text || "")
-        .filter(Boolean)
-        .join("\n") || "I could not generate an answer.";
-
-    return NextResponse.json({ reply });
   } catch (error) {
     console.error("AgriAssist error:", error);
 
@@ -94,6 +124,9 @@ User question: ${typeof message === "string" && message.trim() ? message : "Plea
       );
     }
 
-    return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 500 });
+    return NextResponse.json(
+      { error: "AI service temporarily unavailable." },
+      { status: 500 }
+    );
   }
 }
