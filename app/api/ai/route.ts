@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const TEXT_MODEL = "openai/gpt-oss-20b";
+// Groq production models: GPT-OSS 120B for stronger reasoning/text,
+// Qwen 3.8 27B for image understanding.
+const TEXT_MODEL = "openai/gpt-oss-120b";
 const VISION_MODEL = "qwen/qwen3.8-27b";
 
 const SYSTEM_PROMPT = `You are AgriAssist, a fast expert agriculture AI assistant for Indian farmers and agriculture students.
@@ -60,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    const timeout = setTimeout(() => controller.abort(), 20_000);
 
     try {
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -72,8 +74,8 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           model,
           temperature: hasImage ? 0.5 : 0.2,
-          max_tokens: hasImage ? 700 : 500,
-          ...(hasImage ? { reasoning_effort: "none" } : { reasoning_effort: "low" }),
+          max_tokens: hasImage ? 700 : 700,
+          ...(hasImage ? { reasoning_effort: "none" } : { reasoning_effort: "medium" }),
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: hasImage ? content : userText }
